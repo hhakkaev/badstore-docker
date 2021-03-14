@@ -1,7 +1,7 @@
 # Dockerfile for Badstore
 # Apache HTTP foreground https://github.com/chriswayg/apache-php
 
-FROM debian:stretch
+FROM debian:buster-slim
 
 ENV DEBIAN_FRONTEND noninteractive
 
@@ -17,8 +17,8 @@ COPY apache2/conf/badstore.conf /etc/apache2/sites-available/
 
 # Setup Apache
 RUN a2enmod ssl \
-	    cgid \
-            rewrite && \
+    cgid \
+    rewrite && \
     a2dissite 000-default && \
     a2ensite badstore && \
     mkdir -p /data/apache2/log && \
@@ -42,9 +42,9 @@ RUN chown www-data:mysql /data/apache2/htdocs/backup
 # These scripts will be used to launch MariaDB and configure it
 # securely if no data exists in /data/mariadb
 RUN mkdir -p /data/mariadb/bin && \
-	mkdir -p /data/mariadb/data && \
-	mkdir -p /data/mariadb/log && \
-	mkdir -p /data/mariadb/run
+    mkdir -p /data/mariadb/data && \
+    mkdir -p /data/mariadb/log && \
+    mkdir -p /data/mariadb/run
 ADD mariadb/conf/my.cnf /data/mariadb/etc/my.cnf
 ADD mariadb/bin/mariadb-start.sh /data/mariadb/bin/mariadb-start.sh 
 ADD mariadb/bin/badstore-setup.sql /data/mariadb/bin/badstore-setup.sql
@@ -62,13 +62,18 @@ ENV LC_ALL C.UTF-8
 RUN apt-get clean
 RUN rm -rf /var/cache/apt/archives/* /var/lib/apt/lists/*
 
+# Initialization and Startup Script
+ADD ./shell/start.sh /start.sh
+RUN chmod 755 /start.sh
+
 WORKDIR /var/www/html
 
 EXPOSE 80
 
 # copy supervisor conf
-ADD supervisor/conf/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+ADD supervisor/conf/supervisord.conf /etc/supervisor/supervisord.conf
 
 # By default start up apache in the foreground, override with /bin/bash for interative.
 # start supervisor
-CMD ["/usr/bin/supervisord"]
+#CMD ["/usr/bin/supervisord"]
+CMD ["/bin/bash", "/start.sh"]
